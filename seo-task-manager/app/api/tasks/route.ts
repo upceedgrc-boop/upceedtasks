@@ -1,0 +1,162 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+
+const parseNumber = (value: string | null) => {
+  if (!value) return undefined;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? undefined : parsed;
+};
+
+const parseDate = (value: string | null) => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+};
+
+const toNullableDate = (value?: string | null) => {
+  const parsed = parseDate(value ?? null);
+  return parsed ?? null;
+};
+
+const PUBLISHABLE_TYPES = new Set(["new_article", "rewrite"]);
+
+const resolvePublishState = (
+  type: string,
+  status: string,
+  publishedAtInput?: string | Date | null,
+  fallback?: Date | null
+) => {
+  const shouldPublish = PUBLISHABLE_TYPES.has(type) && status === "done";
+  if (!shouldPublish) {
+    return { isPublished: false, publishedAt: null };
+  }
+  if (!publishedAtInput && fallback) {
+    return { isPublished: true, publishedAt: fallback };
+  }
+  if (!publishedAtInput) {
+    return { isPublished: true, publishedAt: new Date() };
+  }
+  const parsed =
+    typeof publishedAtInput === "string"
+      ? parseDate(publishedAtInput) ?? undefined
+      : publishedAtInput ?? undefined;
+  return { isPublished: true, publishedAt: parsed ?? new Date() };
+};
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const where: Prisma.TaskWhereInput = {};
+
+  const assigneeId = parseNumber(searchParams.get("assigneeId"));
+  if (assigneeId) where.assigneeId = assigneeId;
+
+  const checkerId = parseNumber(searchParams.get("checkerId"));
+  if (checkerId) where.checkerId = checkerId;
+
+  const status = searchParams.get("status");
+  if (status) where.status = status;
+
+  const type = searchParams.get("type");
+  if (type) where.type = type;
+
+  const isPublished = searchParams.get("isPublished");
+  if (isPublished === "true") where.isPublished = true;
+  if (isPublished === "false") where.isPublished = false;
+
+  const publishedMonth = searchParams.get("publishedMonth");
+  if (publishedMonth) {
+    const [year, month] = publishedMonth.split("-").map(Number);
+    if (year && month) {
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month, 1);
+      where.publishedAt = { gte: start, lt: end };
+    }
+  }
+
+  const startFrom = parseDate(searchParams.get("startFrom"));
+  if (startFrom) {
+    where.startDate = { ...(where.startDate ?? {}), gte: startFrom };
+  }
+
+  const startBefore = parseDate(searchParams.get("startBefore"));
+  if (startBefore) {
+    where.startDate = { ...(where.startDate ?? {}), lte: startBefore };
+  }
+
+  const dueDate = parseDate(searchParams.get("dueDate"));
+  if (dueDate) {
+    where.dueDate = { ...(where.dueDate ?? {}), lte: dueDate };
+  }
+
+  const excludeDone = searchParams.get("excludeDone");
+  if (excludeDone === "true") {
+    where.status = { not: "done" };
+  }
+
+  const todayOnly = searchParams.get("isToday");
+  if (todayOnly === "true") {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    where.AND = [
+      { OR: [{ startDate: null }, { startDate: { lte: today } }] },
+      { status: { not: "done" } },
+    ];
+  }
+
+  let orderBy: Prisma.TaskOrderByWithRelationInput = { dueDate: "asc" };
+  const sort = searchParams.get("sort");
+  if (sort === "startDateAsc") {
+    orderBy = { startDate: "asc" };
+  } else if (sort === "createdAtDesc") {
+    orderBy = { createdAt: "desc" };
+  }
+
+  const tasks = await prisma.task.findMany({
+    where,
+    orderBy,
+    include: {
+      assignee: true,
+      author: true,
+      checker: true,
+    },
+  });
+
+  return NextResponse.json(tasks);
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const statusValue: string = body.status ?? "not_started";
+    const typeValue: string = body.type ?? "new_article";
+
+    const publishState = resolvePublishState(typeValue, statusValue, body.publishedAt);
+
+    const task = await prisma.task.create({
+      data: {
+        title: body.title,
+        description: body.description ?? "",
+        status: statusValue,
+        type: typeValue,
+        startDate: toNullableDate(body.startDate),
+        dueDate: new Date(body.dueDate),
+        feedbackDate1: toNullableDate(body.feedbackDate1),
+        feedbackDate2: toNullableDate(body.feedbackDate2),
+        isPublished: publishState.isPublished,
+        publishedAt: publishState.publishedAt,
+        articleUrl: body.articleUrl || null,
+        articleSlug: body.articleSlug || null,
+        assigneeId: Number(body.assigneeId),
+        authorId: Number(body.authorId),
+        checkerId: Number(body.checkerId),
+      },
+    });
+
+    return NextResponse.json(task, { status: 201 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "タスクの作成に失敗しました" }, { status: 400 });
+  }
+}
+

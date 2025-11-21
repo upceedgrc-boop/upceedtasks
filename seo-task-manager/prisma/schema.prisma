@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  role      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authoredTasks  Task[] @relation("AuthorTasks")
+  assignedTasks  Task[] @relation("AssigneeTasks")
+  checkingTasks  Task[] @relation("CheckerTasks")
+
+  workLogs WorkLog[]
+  shifts   Shift[]
+}
+
+model Task {
+  id             Int         @id @default(autoincrement())
+  title          String
+  description    String
+  status         String      @default("not_started")
+  type           String      @default("new_article")
+  startDate      DateTime?
+  dueDate        DateTime
+  feedbackDate1  DateTime?
+  feedbackDate2  DateTime?
+  isPublished    Boolean     @default(false)
+  publishedAt    DateTime?
+  articleUrl     String?
+  articleSlug    String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  assigneeId Int
+  authorId   Int
+  checkerId  Int
+
+  assignee User @relation("AssigneeTasks", fields: [assigneeId], references: [id])
+  author   User @relation("AuthorTasks", fields: [authorId], references: [id])
+  checker  User @relation("CheckerTasks", fields: [checkerId], references: [id])
+
+  workLogs WorkLog[]
+}
+
+model WorkLog {
+  id             Int        @id @default(autoincrement())
+  workDate       DateTime
+  note           String
+  statusSnapshot String
+  createdAt      DateTime   @default(now())
+
+  userId Int
+  taskId Int
+
+  user User @relation(fields: [userId], references: [id])
+  task Task @relation(fields: [taskId], references: [id])
+}
+
+model Shift {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  isWorking Boolean  @default(true)
+  memo      String?
+
+  userId Int
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+}
+

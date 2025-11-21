@@ -1,0 +1,7 @@
+# Ignore downloaded Node.js binaries/archives
+node-v*-darwin-arm64/
+node-v*-darwin-arm64.tar.gz
+
+# macOS metadata
+*.DS_Store
+

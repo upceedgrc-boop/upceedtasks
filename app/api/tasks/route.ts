@@ -76,17 +76,23 @@ export async function GET(request: Request) {
 
   const startFrom = parseDate(searchParams.get("startFrom"));
   if (startFrom) {
-    where.startDate = { ...(where.startDate ?? {}), gte: startFrom };
+    const existing =
+      where.startDate && typeof where.startDate === "object" ? where.startDate : {};
+    where.startDate = { ...existing, gte: startFrom };
   }
 
   const startBefore = parseDate(searchParams.get("startBefore"));
   if (startBefore) {
-    where.startDate = { ...(where.startDate ?? {}), lte: startBefore };
+    const existing =
+        where.startDate && typeof where.startDate === "object" ? where.startDate : {};
+    where.startDate = { ...existing, lte: startBefore };
   }
 
   const dueDate = parseDate(searchParams.get("dueDate"));
   if (dueDate) {
-    where.dueDate = { ...(where.dueDate ?? {}), lte: dueDate };
+    const existing =
+      where.dueDate && typeof where.dueDate === "object" ? where.dueDate : {};
+    where.dueDate = { ...existing, lte: dueDate };
   }
 
   const excludeDone = searchParams.get("excludeDone");

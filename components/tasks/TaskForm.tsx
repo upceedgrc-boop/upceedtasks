@@ -31,9 +31,10 @@ export function TaskForm({ initialValues, users, onSubmit, onCancel, submitLabel
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value, type, checked } = e.target;
-    if (type === "checkbox") {
-      setValues((prev) => ({ ...prev, [name]: checked }));
+    const target = e.target;
+    const { name, value, type } = target;
+    if (target instanceof HTMLInputElement && type === "checkbox") {
+      setValues((prev) => ({ ...prev, [name]: target.checked }));
       return;
     }
     setValues((prev) => ({

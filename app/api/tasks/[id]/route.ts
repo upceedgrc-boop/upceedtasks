@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
@@ -34,11 +34,12 @@ const resolvePublishState = (
 };
 
 export async function GET(
-  _request: Request,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const task = await prisma.task.findUnique({
-    where: { id: Number(params.id) },
+    where: { id: Number(id) },
     include: {
       assignee: true,
       author: true,
@@ -57,10 +58,14 @@ export async function GET(
   return NextResponse.json(task);
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const body = await request.json();
-    const taskId = Number(params.id);
+    const { id } = await params;
+    const taskId = Number(id);
     const current = await prisma.task.findUnique({ where: { id: taskId } });
     if (!current) {
       return NextResponse.json({ message: "タスクが見つかりません" }, { status: 404 });
@@ -108,9 +113,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    await prisma.task.delete({ where: { id: Number(params.id) } });
+    const { id } = await params;
+    await prisma.task.delete({ where: { id: Number(id) } });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error(error);

@@ -2,7 +2,7 @@
 
 ## 現在の接続設定
 
-- **ホスト**: `db.htnyjcmjxkebdkeaprztt.supabase.co`
+- **ホスト**: `db.intyjcmjxkebdkeaprzt.supabase.co`
 - **ポート**: `5432` (Direct connection)
 - **データベース**: `postgres`
 - **ユーザー**: `postgres`
@@ -34,7 +34,7 @@ Supabase ダッシュボードで以下を確認：
 Direct connection (ポート 5432) がうまくいかない場合、Connection Pooling (ポート 6543) を試してください：
 
 ```
-postgresql://postgres:upceed999@db.htnyjcmjxkebdkeaprztt.supabase.co:6543/postgres?pgbouncer=true
+postgresql://postgres:upceed999@db.intyjcmjxkebdkeaprzt.supabase.co:6543/postgres?pgbouncer=true
 ```
 
 ### 5. パスワードの確認

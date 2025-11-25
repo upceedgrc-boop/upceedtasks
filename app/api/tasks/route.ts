@@ -162,11 +162,22 @@ export async function GET(request: Request) {
 
     // Prisma の接続エラーの場合、より詳細な情報を返す
     if (errorMessage.includes("P1001") || errorMessage.includes("Can't reach database server")) {
+      const dbUrl = process.env.DATABASE_URL || "NOT SET";
+      const host = dbUrl.match(/@([^:]+)/)?.[1] || "UNKNOWN";
       return NextResponse.json(
         {
           message: "データベースサーバーに接続できません",
           error: "Database connection failed. Please check DATABASE_URL and Supabase connection.",
           details: errorMessage,
+          troubleshooting: {
+            host: host,
+            suggestions: [
+              "Supabase プロジェクトがアクティブか確認してください",
+              "Supabase の Settings → Database → Connection Pooling で接続文字列を確認してください",
+              "IP アドレスの許可設定を確認してください（Settings → Database → Network Restrictions）",
+              "Connection Pooling (ポート 6543) を試してください",
+            ],
+          },
         },
         { status: 500 }
       );

@@ -104,6 +104,11 @@ export async function PUT(
     const updated = await prisma.task.update({
       where: { id: taskId },
       data,
+      include: {
+        assignee: true,
+        author: true,
+        checker: true,
+      },
     });
 
     return NextResponse.json(updated);

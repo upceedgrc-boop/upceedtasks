@@ -59,7 +59,40 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const weekStartParam = searchParams.get("weekStart");
   const dateParam = searchParams.get("date");
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
 
+  // 1ヶ月表示用: from/to パラメータがある場合
+  if (fromParam || toParam) {
+    const from = fromParam ? parseDateOnly(fromParam) : null;
+    const to = toParam ? parseDateOnly(toParam) : null;
+
+    if (!from || !to) {
+      return NextResponse.json(
+        { message: "from と to の両方を指定してください" },
+        { status: 400 }
+      );
+    }
+
+    const start = toStartOfDay(from);
+    const end = new Date(to);
+    end.setDate(end.getDate() + 1); // to の日を含めるため +1日
+
+    const shifts = await prisma.shift.findMany({
+      where: {
+        date: {
+          gte: start,
+          lt: end,
+        },
+      },
+      include: { user: true },
+      orderBy: [{ user: { name: "asc" } }, { date: "asc" }],
+    });
+
+    return NextResponse.json(shifts);
+  }
+
+  // 週表示用: weekStart パラメータがある場合
   if (weekStartParam) {
     const parsedWeekStart = parseDateOnly(weekStartParam) ?? new Date();
     const start = toStartOfDay(startOfWeek(parsedWeekStart, { weekStartsOn: 1 }));
@@ -74,12 +107,13 @@ export async function GET(request: NextRequest) {
         },
       },
       include: { user: true },
-      orderBy: [{ user: { name: "asc" } }, { startTime: "asc" }],
+      orderBy: [{ user: { name: "asc" } }, { date: "asc" }],
     });
 
     return NextResponse.json(weeklyShifts);
   }
 
+  // 1日表示用: date パラメータがある場合
   const parsedDate = parseDateOnly(dateParam ?? undefined) ?? new Date();
   const dayStart = toStartOfDay(parsedDate);
   const dayEnd = new Date(dayStart);
@@ -93,7 +127,7 @@ export async function GET(request: NextRequest) {
       },
     },
     include: { user: true },
-    orderBy: [{ user: { name: "asc" } }, { startTime: "asc" }],
+      orderBy: [{ user: { name: "asc" } }, { date: "asc" }],
   });
 
   return NextResponse.json(shifts);

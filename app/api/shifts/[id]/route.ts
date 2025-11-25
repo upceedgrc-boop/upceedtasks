@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { startOfWeek } from "date-fns";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 const BUSINESS_START_HOUR = 9;
 
@@ -55,89 +55,87 @@ const validateBusinessHours = (start: Date, end: Date, baseDate: Date) => {
   return null;
 };
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const weekStartParam = searchParams.get("weekStart");
-  const dateParam = searchParams.get("date");
-
-  if (weekStartParam) {
-    const parsedWeekStart = parseDateOnly(weekStartParam) ?? new Date();
-    const start = toStartOfDay(startOfWeek(parsedWeekStart, { weekStartsOn: 1 }));
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-
-    const weeklyShifts = await prisma.shift.findMany({
-      where: {
-        date: {
-          gte: start,
-          lt: end,
-        },
-      },
-      include: { user: true },
-      orderBy: [{ user: { name: "asc" } }, { startTime: "asc" }],
-    });
-
-    return NextResponse.json(weeklyShifts);
-  }
-
-  const parsedDate = parseDateOnly(dateParam ?? undefined) ?? new Date();
-  const dayStart = toStartOfDay(parsedDate);
-  const dayEnd = new Date(dayStart);
-  dayEnd.setDate(dayEnd.getDate() + 1);
-
-  const shifts = await prisma.shift.findMany({
-    where: {
-      date: {
-        gte: dayStart,
-        lt: dayEnd,
-      },
-    },
-    include: { user: true },
-    orderBy: [{ user: { name: "asc" } }, { startTime: "asc" }],
-  });
-
-  return NextResponse.json(shifts);
-}
-
-export async function POST(request: NextRequest) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
+    const shiftId = Number(id);
     const body = await request.json();
-    const baseDate = parseDateOnly(body.date);
+
+    const existing = await prisma.shift.findUnique({ where: { id: shiftId } });
+    if (!existing) {
+      return NextResponse.json({ message: "シフトが見つかりません" }, { status: 404 });
+    }
+
+    const baseDate =
+      ("date" in body && body.date ? parseDateOnly(body.date) : null) ??
+      toStartOfDay(new Date(existing.date));
     if (!baseDate) {
       return NextResponse.json({ message: "日付を正しく入力してください" }, { status: 400 });
     }
-    if (!body.userId) {
-      return NextResponse.json({ message: "メンバーを選択してください" }, { status: 400 });
-    }
-    if (!body.startTime || !body.endTime) {
-      return NextResponse.json({ message: "開始・終了時刻を入力してください" }, { status: 400 });
-    }
 
-    const startTime = combineDateAndTime(baseDate, body.startTime);
-    const endTime = combineDateAndTime(baseDate, body.endTime);
+    const startTime =
+      "startTime" in body && body.startTime
+        ? combineDateAndTime(baseDate, body.startTime)
+        : new Date(existing.startTime);
+    const endTime =
+      "endTime" in body && body.endTime
+        ? combineDateAndTime(baseDate, body.endTime)
+        : new Date(existing.endTime);
+
     if (!startTime || !endTime) {
       return NextResponse.json({ message: "時刻の形式が正しくありません" }, { status: 400 });
     }
+
     const validationError = validateBusinessHours(startTime, endTime, baseDate);
     if (validationError) {
       return NextResponse.json({ message: validationError }, { status: 400 });
     }
 
-    const shift = await prisma.shift.create({
-      data: {
-        userId: Number(body.userId),
-        date: baseDate,
-        startTime,
-        endTime,
-        memo: body.memo ?? null,
-        isWorking: body.isWorking ?? true,
-      },
+    const data: Prisma.ShiftUpdateInput = {
+      date: baseDate,
+      startTime,
+      endTime,
+    };
+
+    if ("memo" in body) {
+      data.memo = body.memo ?? null;
+    }
+    if ("isWorking" in body) {
+      data.isWorking = Boolean(body.isWorking);
+    }
+    if ("userId" in body && body.userId) {
+      data.user = { connect: { id: Number(body.userId) } };
+    }
+
+    const updated = await prisma.shift.update({
+      where: { id: shiftId },
+      data,
       include: { user: true },
     });
 
-    return NextResponse.json(shift, { status: 201 });
+    return NextResponse.json(updated);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ message: "シフト登録に失敗しました" }, { status: 400 });
+    return NextResponse.json({ message: "シフト更新に失敗しました" }, { status: 400 });
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const shiftId = Number(id);
+    await prisma.shift.delete({ where: { id: shiftId } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "シフト削除に失敗しました" }, { status: 400 });
+  }
+}
+
+

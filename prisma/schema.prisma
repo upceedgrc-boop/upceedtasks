@@ -68,13 +68,17 @@ model WorkLog {
 model Shift {
   id        Int      @id @default(autoincrement())
   date      DateTime
+  startTime DateTime @default(now())
+  endTime   DateTime @default(now())
   isWorking Boolean  @default(true)
   memo      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   userId Int
 
   user User @relation(fields: [userId], references: [id])
-
-  @@unique([userId, date])
+  @@index([date])
+  @@index([userId, date])
 }
 

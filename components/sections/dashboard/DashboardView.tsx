@@ -5,7 +5,7 @@ import { Users } from "lucide-react";
 import type { TaskWithUsers, ShiftWithUser } from "@/types";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { formatDate, todayInputValue } from "@/lib/date";
+import { formatDate, formatTimeRange, todayInputValue } from "@/lib/date";
 import { TaskDetailPanel } from "@/components/tasks/TaskDetailPanel";
 import { useUsers } from "@/hooks/useUsers";
 
@@ -64,10 +64,13 @@ export default function DashboardView() {
           {shifts.map((shift) => (
             <span
               key={shift.id}
-              className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700"
+              className="rounded-full bg-slate-100 px-3 py-1 text-xs md:text-sm text-slate-700"
             >
-              {shift.user.name}
-              {shift.memo && <span className="text-xs text-slate-400 ml-1">{shift.memo}</span>}
+              <span className="font-medium">{shift.user.name}</span>
+              <span className="ml-1 text-slate-500">
+                {formatTimeRange(shift.startTime, shift.endTime)}
+              </span>
+              {shift.memo && <span className="ml-1 text-slate-400">{shift.memo}</span>}
             </span>
           ))}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { User } from "@prisma/client";
 import { TASK_STATUSES, TASK_TYPES } from "@/lib/constants";
 import { toDateInputValue } from "@/lib/date";
@@ -25,7 +25,9 @@ export function TaskForm({ initialValues, users, onSubmit, onCancel, submitLabel
   const disabled = submitting;
 
   const userOptions = useMemo(() => {
-    return [...users].sort((a, b) => a.name.localeCompare(b.name, "ja"));
+    return [...users]
+      .filter((user) => user.isActive !== false)
+      .sort((a, b) => a.name.localeCompare(b.name, "ja"));
   }, [users]);
 
   const handleChange = (
@@ -47,6 +49,29 @@ export function TaskForm({ initialValues, users, onSubmit, onCancel, submitLabel
           : value,
     }));
   };
+
+  useEffect(() => {
+    if (!initialValues) return;
+    setValues((prev) => ({
+      ...prev,
+      ...initialValues,
+      assigneeId: initialValues.assigneeId !== undefined && initialValues.assigneeId !== null
+        ? typeof initialValues.assigneeId === "number"
+          ? initialValues.assigneeId
+          : Number(initialValues.assigneeId) || ""
+        : "",
+      authorId: initialValues.authorId !== undefined && initialValues.authorId !== null
+        ? typeof initialValues.authorId === "number"
+          ? initialValues.authorId
+          : Number(initialValues.authorId) || ""
+        : "",
+      checkerId: initialValues.checkerId !== undefined && initialValues.checkerId !== null
+        ? typeof initialValues.checkerId === "number"
+          ? initialValues.checkerId
+          : Number(initialValues.checkerId) || ""
+        : "",
+    }));
+  }, [initialValues]);
 
   const validate = () => {
     if (!values.title.trim()) return "タスク名は必須です";
@@ -133,7 +158,7 @@ export function TaskForm({ initialValues, users, onSubmit, onCancel, submitLabel
           <label className="text-sm font-medium text-slate-600">担当者 *</label>
           <select
             name="assigneeId"
-            value={values.assigneeId}
+            value={values.assigneeId === "" ? "" : String(values.assigneeId)}
             onChange={handleChange}
             disabled={disabled}
           >
@@ -149,7 +174,7 @@ export function TaskForm({ initialValues, users, onSubmit, onCancel, submitLabel
           <label className="text-sm font-medium text-slate-600">タスク作成者 *</label>
           <select
             name="authorId"
-            value={values.authorId}
+            value={values.authorId === "" ? "" : String(values.authorId)}
             onChange={handleChange}
             disabled={disabled}
           >
@@ -165,7 +190,7 @@ export function TaskForm({ initialValues, users, onSubmit, onCancel, submitLabel
           <label className="text-sm font-medium text-slate-600">チェック担当 *</label>
           <select
             name="checkerId"
-            value={values.checkerId}
+            value={values.checkerId === "" ? "" : String(values.checkerId)}
             onChange={handleChange}
             disabled={disabled}
           >

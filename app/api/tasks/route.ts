@@ -137,6 +137,24 @@ export async function POST(request: Request) {
     const statusValue: string = body.status ?? "not_started";
     const typeValue: string = body.type ?? "new_article";
 
+    if (!body.assigneeId || !body.authorId || !body.checkerId) {
+      return NextResponse.json(
+        { message: "担当者、タスク作成者、チェック担当は必須です" },
+        { status: 400 }
+      );
+    }
+
+    const assigneeId = Number(body.assigneeId);
+    const authorId = Number(body.authorId);
+    const checkerId = Number(body.checkerId);
+
+    if (Number.isNaN(assigneeId) || Number.isNaN(authorId) || Number.isNaN(checkerId)) {
+      return NextResponse.json(
+        { message: "担当者、タスク作成者、チェック担当のIDが無効です" },
+        { status: 400 }
+      );
+    }
+
     const publishState = resolvePublishState(typeValue, statusValue, body.publishedAt);
 
     const task = await prisma.task.create({
@@ -153,9 +171,14 @@ export async function POST(request: Request) {
         publishedAt: publishState.publishedAt,
         articleUrl: body.articleUrl || null,
         articleSlug: body.articleSlug || null,
-        assigneeId: Number(body.assigneeId),
-        authorId: Number(body.authorId),
-        checkerId: Number(body.checkerId),
+        assigneeId,
+        authorId,
+        checkerId,
+      },
+      include: {
+        assignee: true,
+        author: true,
+        checker: true,
       },
     });
 

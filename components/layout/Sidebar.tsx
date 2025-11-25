@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, CheckSquare, ClipboardList, FileText, Layers } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarDays,
+  CheckSquare,
+  ClipboardList,
+  FileText,
+  Layers,
+} from "lucide-react";
 import clsx from "clsx";
 
 const navItems = [
@@ -11,6 +18,7 @@ const navItems = [
   { href: "/members", label: "担当者別", icon: CheckSquare },
   { href: "/published", label: "公開記事", icon: FileText },
   { href: "/logs", label: "作業ログ", icon: CalendarDays },
+  { href: "/shifts", label: "シフト", icon: CalendarClock },
 ];
 
 export function Sidebar() {

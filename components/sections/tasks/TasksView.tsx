@@ -123,25 +123,37 @@ export default function TasksView() {
         <div className="grid gap-4 md:grid-cols-3">
           <div>
             <label className="text-xs text-slate-500">担当者</label>
-            <select name="assigneeId" value={filters.assigneeId} onChange={handleFilterChange}>
-              <option value="">すべて</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+            {usersLoading ? (
+              <select disabled className="mt-1">
+                <option>読み込み中...</option>
+              </select>
+            ) : (
+              <select name="assigneeId" value={filters.assigneeId} onChange={handleFilterChange} className="mt-1">
+                <option value="">すべて</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label className="text-xs text-slate-500">チェック担当</label>
-            <select name="checkerId" value={filters.checkerId} onChange={handleFilterChange}>
-              <option value="">すべて</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name}
-                </option>
-              ))}
-            </select>
+            {usersLoading ? (
+              <select disabled className="mt-1">
+                <option>読み込み中...</option>
+              </select>
+            ) : (
+              <select name="checkerId" value={filters.checkerId} onChange={handleFilterChange} className="mt-1">
+                <option value="">すべて</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div>
             <label className="text-xs text-slate-500">ステータス</label>

@@ -25,6 +25,7 @@ export function TaskForm({ initialValues, users, onSubmit, onCancel, submitLabel
   const disabled = submitting;
 
   const userOptions = useMemo(() => {
+    if (!users || users.length === 0) return [];
     return [...users]
       .filter((user) => user.isActive !== false)
       .sort((a, b) => a.name.localeCompare(b.name, "ja"));
@@ -156,51 +157,69 @@ export function TaskForm({ initialValues, users, onSubmit, onCancel, submitLabel
       <div className="grid gap-4 md:grid-cols-3">
         <div>
           <label className="text-sm font-medium text-slate-600">担当者 *</label>
-          <select
-            name="assigneeId"
-            value={values.assigneeId === "" ? "" : String(values.assigneeId)}
-            onChange={handleChange}
-            disabled={disabled}
-          >
-            <option value="">選択してください</option>
-            {userOptions.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
+          {userOptions.length === 0 ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+              メンバーが登録されていません。先にメンバーを登録してください。
+            </div>
+          ) : (
+            <select
+              name="assigneeId"
+              value={values.assigneeId === "" ? "" : String(values.assigneeId)}
+              onChange={handleChange}
+              disabled={disabled}
+            >
+              <option value="">選択してください</option>
+              {userOptions.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div>
           <label className="text-sm font-medium text-slate-600">タスク作成者 *</label>
-          <select
-            name="authorId"
-            value={values.authorId === "" ? "" : String(values.authorId)}
-            onChange={handleChange}
-            disabled={disabled}
-          >
-            <option value="">選択してください</option>
-            {userOptions.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
+          {userOptions.length === 0 ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+              メンバーが登録されていません。
+            </div>
+          ) : (
+            <select
+              name="authorId"
+              value={values.authorId === "" ? "" : String(values.authorId)}
+              onChange={handleChange}
+              disabled={disabled}
+            >
+              <option value="">選択してください</option>
+              {userOptions.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div>
           <label className="text-sm font-medium text-slate-600">チェック担当 *</label>
-          <select
-            name="checkerId"
-            value={values.checkerId === "" ? "" : String(values.checkerId)}
-            onChange={handleChange}
-            disabled={disabled}
-          >
-            <option value="">選択してください</option>
-            {userOptions.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
+          {userOptions.length === 0 ? (
+            <div className="text-sm text-amber-600 bg-amber-50 p-2 rounded">
+              メンバーが登録されていません。
+            </div>
+          ) : (
+            <select
+              name="checkerId"
+              value={values.checkerId === "" ? "" : String(values.checkerId)}
+              onChange={handleChange}
+              disabled={disabled}
+            >
+              <option value="">選択してください</option>
+              {userOptions.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 

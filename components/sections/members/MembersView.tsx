@@ -90,17 +90,26 @@ export default function MembersView() {
       <section className="card p-5 space-y-4">
         <div>
           <label className="text-xs text-slate-500">メンバーを選択</label>
-          <select
-            value={selectedUserId ?? ""}
-            onChange={(e) => setSelectedUserId(Number(e.target.value))}
-          >
-            <option value="">選択してください</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name} ({user.role})
-              </option>
-            ))}
-          </select>
+          {users.length === 0 ? (
+            <div className="mt-2 p-3 rounded-lg bg-amber-50 border border-amber-200">
+              <p className="text-sm text-amber-800">
+                メンバーが登録されていません。データベースにユーザーが存在するか確認してください。
+              </p>
+            </div>
+          ) : (
+            <select
+              value={selectedUserId ?? ""}
+              onChange={(e) => setSelectedUserId(Number(e.target.value))}
+              className="mt-1"
+            >
+              <option value="">選択してください</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} ({user.role})
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         {currentUser && (
           <p className="text-sm text-slate-500">

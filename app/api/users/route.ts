@@ -2,15 +2,36 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const includeInactive = searchParams.get("includeInactive") === "true";
+  try {
+    const { searchParams } = new URL(request.url);
+    const includeInactive = searchParams.get("includeInactive") === "true";
 
-  const users = await prisma.user.findMany({
-    where: includeInactive ? {} : { isActive: true },
-    orderBy: [{ role: "asc" }, { name: "asc" }],
-  });
+    const users = await prisma.user.findMany({
+      where: includeInactive ? {} : { isActive: true },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
-  return NextResponse.json(users);
+    console.log(`[API /users] Found ${users.length} users (includeInactive: ${includeInactive})`);
+    
+    return NextResponse.json(users);
+  } catch (error) {
+    console.error("[API /users] Error fetching users:", error);
+    return NextResponse.json(
+      { 
+        message: "ユーザー取得に失敗しました", 
+        error: error instanceof Error ? error.message : String(error) 
+      },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {

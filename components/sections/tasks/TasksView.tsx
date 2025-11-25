@@ -34,7 +34,14 @@ const initialFilters: Filters = {
 };
 
 export default function TasksView() {
-  const { users, loading: usersLoading } = useUsers();
+  const { users, loading: usersLoading, error: usersError } = useUsers();
+  
+  useEffect(() => {
+    console.log("[TasksView] Users:", users.length, users);
+    if (usersError) {
+      console.error("[TasksView] Users error:", usersError);
+    }
+  }, [users, usersError]);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [tasks, setTasks] = useState<TaskWithUsers[]>([]);
   const [loading, setLoading] = useState(true);

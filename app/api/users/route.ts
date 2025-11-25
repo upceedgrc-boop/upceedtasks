@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// Prisma は Edge Runtime では動かないため、Node.js runtime を明示的に指定
+export const runtime = "nodejs";
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -19,15 +22,20 @@ export async function GET(request: Request) {
       },
     });
 
-    console.log(`[API /users] Found ${users.length} users (includeInactive: ${includeInactive})`);
+    console.log(`[GET /api/users] Found ${users.length} users (includeInactive: ${includeInactive})`);
     
     return NextResponse.json(users);
   } catch (error) {
-    console.error("[API /users] Error fetching users:", error);
+    console.error("[GET /api/users] Error:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[GET /api/users] Error details:", {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { 
         message: "ユーザー取得に失敗しました", 
-        error: error instanceof Error ? error.message : String(error) 
+        error: errorMessage,
       },
       { status: 500 }
     );
@@ -46,8 +54,15 @@ export async function POST(request: Request) {
     });
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: "ユーザー作成に失敗しました" }, { status: 400 });
+    console.error("[POST /api/users] Error:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return NextResponse.json(
+      { 
+        message: "ユーザー作成に失敗しました",
+        error: errorMessage,
+      },
+      { status: 400 }
+    );
   }
 }
 

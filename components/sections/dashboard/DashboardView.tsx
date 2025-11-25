@@ -11,7 +11,14 @@ import { useUsers } from "@/hooks/useUsers";
 
 export default function DashboardView() {
   const today = useMemo(() => todayInputValue(), []);
-  const { users } = useUsers();
+  const { users, loading: usersLoading, error: usersError } = useUsers();
+  
+  useEffect(() => {
+    console.log("[DashboardView] Users:", users.length, users);
+    if (usersError) {
+      console.error("[DashboardView] Users error:", usersError);
+    }
+  }, [users, usersError]);
   const [tasks, setTasks] = useState<TaskWithUsers[]>([]);
   const [shifts, setShifts] = useState<ShiftWithUser[]>([]);
   const [taskLoading, setTaskLoading] = useState(true);

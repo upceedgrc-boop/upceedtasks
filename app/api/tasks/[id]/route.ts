@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
+// Prisma は Edge Runtime では動かないため、Node.js runtime を明示的に指定
+export const runtime = "nodejs";
+// 動的ルートとして扱い、静的最適化を無効化
+export const dynamic = "force-dynamic";
+
 const PUBLISHABLE_TYPES = new Set(["new_article", "rewrite"]);
 
 const parseDate = (value?: string | null) => {

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// Prisma は Edge Runtime では動かないため、Node.js runtime を明示的に指定
+export const runtime = "nodejs";
+// 動的ルートとして扱い、静的最適化を無効化
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get("date");

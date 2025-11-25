@@ -8,9 +8,23 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
+    // 環境変数のチェック
+    if (!process.env.DATABASE_URL) {
+      console.error("[GET /api/users] DATABASE_URL is not set");
+      return NextResponse.json(
+        {
+          message: "データベース接続設定がありません",
+          error: "DATABASE_URL environment variable is not set",
+        },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get("includeInactive") === "true";
 
+    console.log(`[GET /api/users] Starting query (includeInactive: ${includeInactive})`);
+    
     const users = await prisma.user.findMany({
       where: includeInactive ? {} : { isActive: true },
       orderBy: { name: "asc" },
@@ -24,16 +38,44 @@ export async function GET(request: Request) {
       },
     });
 
-    console.log(`[GET /api/users] Found ${users.length} users (includeInactive: ${includeInactive})`);
+    console.log(`[GET /api/users] Found ${users.length} users`);
     
     return NextResponse.json(users);
   } catch (error) {
     console.error("[GET /api/users] Error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     console.error("[GET /api/users] Error details:", {
       message: errorMessage,
-      stack: error instanceof Error ? error.stack : undefined,
+      stack: errorStack,
+      name: error instanceof Error ? error.name : undefined,
+      code: (error as any)?.code,
     });
+
+    // Prisma の接続エラーの場合、より詳細な情報を返す
+    if (errorMessage.includes("P1001") || errorMessage.includes("Can't reach database server")) {
+      return NextResponse.json(
+        {
+          message: "データベースサーバーに接続できません",
+          error: "Database connection failed. Please check DATABASE_URL and Supabase connection.",
+          details: errorMessage,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (errorMessage.includes("P1000") || errorMessage.includes("Authentication failed")) {
+      return NextResponse.json(
+        {
+          message: "データベース認証に失敗しました",
+          error: "Database authentication failed. Please check DATABASE_URL credentials.",
+          details: errorMessage,
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       { 
         message: "ユーザー取得に失敗しました", 
